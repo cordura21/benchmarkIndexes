@@ -32,17 +32,18 @@ dollar <- dollar %>% dcast(date ~ var, fun.aggregate = sum) %>%
 # Merval: add dividends ---------------------------------------------------
 merval.div.yield <- prices %>% filter(var == 'merval_div_yield')
 merval.mean.dy <-mean(merval.div.yield$value,na.rm = TRUE) / 100
-merval.mean.dy<- log(merval.mean.dy  + 1)
 
 merval.cost <- 0.70 / 100
-merval.cost<- log(merval.cost  + 1)
+
 
 merval.price <-  prices %>% filter(var == 'merval_price') %>%
-  mutate(return = TTR::ROC(value,type = 'continuous')) %>%
+  mutate(return = TTR::ROC(value,type = 'discrete')) %>%
   mutate(net.return = return + (merval.mean.dy - merval.cost) / 12) %>%
   mutate(net.return = ifelse(is.na(net.return),0,net.return)) %>%
-  mutate(cumReturn = cumsum(net.return)) %>%
-  mutate(base100 = 100 * (1+ exp(cumReturn)-1)) %>%
+  mutate(net.return.log = log(1+net.return)) %>%
+  mutate(cumReturn.log = cumsum(net.return.log)) %>%
+  mutate(cumReturn.discrete = exp(cumReturn.log) -1) %>%
+  mutate(base100 = 100 * (1+cumReturn.discrete)) %>%
   mutate( var = 'merval_price_TR_net') %>%
   select(date,base100,var)
 
@@ -84,7 +85,7 @@ benchmarks$five.assets$weights <- c(0.4 / 5,
                                     .60,
                                     0.4 / 5)
 
-enchmarks$five.assets.risk.on <- list()
+benchmarks$five.assets.risk.on <- list()
 benchmarks$five.assets.risk.on$rebalancing <- 'years'
 benchmarks$five.assets.risk.on$securities <- c('eem',
                                        'gsg',
@@ -113,7 +114,7 @@ index(myBenchmarks$alfa) <- as.Date(index(myBenchmarks$alfa),1)
 myBenchmarks$alfa <- myBenchmarks$alfa[!is.na(index(myBenchmarks$alfa)),]
 myBenchmarks$alfa <- TTR::ROC (myBenchmarks$alfa,type = 'discrete')
 
-myBenchmarks$alfa <- Return.portfolio(myBenchmarks$alfa,
+myBenchmarks$alfa.bmk <- Return.portfolio(myBenchmarks$alfa,
                                       weights = benchmarks$alfa$weights,
                                       rebalance_on = benchmarks$alfa$rebalancing)
 
@@ -130,7 +131,7 @@ index(myBenchmarks$latam) <- as.Date(index(myBenchmarks$latam),1)
 myBenchmarks$latam <- myBenchmarks$latam[!is.na(index(myBenchmarks$latam)),]
 myBenchmarks$latam <- TTR::ROC (myBenchmarks$latam,type = 'discrete')
 
-myBenchmarks$latam <- Return.portfolio(myBenchmarks$latam,
+myBenchmarks$latam.bmk <- Return.portfolio(myBenchmarks$latam,
                                       weights = benchmarks$latam$weights,
                                       rebalance_on = benchmarks$latam$rebalancing)
 
@@ -145,7 +146,7 @@ index(myBenchmarks$five.assets) <- as.Date(index(myBenchmarks$five.assets),1)
 myBenchmarks$five.assets <- myBenchmarks$five.assets[!is.na(index(myBenchmarks$five.assets)),]
 myBenchmarks$five.assets <- TTR::ROC (myBenchmarks$five.assets,type = 'discrete')
 
-myBenchmarks$five.assets <- Return.portfolio(myBenchmarks$five.assets,
+myBenchmarks$five.assets.bmk <- Return.portfolio(myBenchmarks$five.assets,
                                        weights = benchmarks$five.assets$weights,
                                        rebalance_on = benchmarks$five.assets$rebalancing)
 
@@ -161,6 +162,6 @@ index(myBenchmarks$five.assets.risk.on) <- as.Date(index(myBenchmarks$five.asset
 myBenchmarks$five.assets.risk.on <- myBenchmarks$five.assets.risk.on[!is.na(index(myBenchmarks$five.assets.risk.on)),]
 myBenchmarks$five.assets.risk.on <- TTR::ROC (myBenchmarks$five.assets.risk.on,type = 'discrete')
 
-myBenchmarks$five.assets.risk.on <- Return.portfolio(myBenchmarks$five.assets.risk.on,
+myBenchmarks$five.assets.risk.on.bmk <- Return.portfolio(myBenchmarks$five.assets.risk.on,
                                              weights = benchmarks$five.assets.risk.on$weights,
                                              rebalance_on = benchmarks$five.assets.risk.on$rebalancing)
